@@ -2,8 +2,8 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const morgan = require('morgan');
-const logger = require('./app/logger');
-const routes = require('./app/routes');
+const logger = require('./logger');
+const routes = require('./routes');
 const hbs = require('express-handlebars');
 const port = 3000;
 

@@ -2,9 +2,16 @@
   "name": "buy.cans-backend",
   "version": "0.0.1",
   "description": "backend server for buy.cans",
-  "main": "app/server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "test": "mocha  ./test/test --exit --timeout 50000"
+    "test": "yarn run build && DB_URL=mongodb://localhost:27017/buycans_test mocha ./test/test --exit --timeout 2000",
+    "start": "yarn run serve",
+    "build": "yarn run build-ts",
+    "serve": "node dist/server.js",
+    "watch-node": "nodemon dist/server.js",
+    "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"yarn run watch-ts\" \"yarn run watch-node\"",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w"
   },
   "author": "Tom Allen <tom@telega.org> (http://telega.org)",
   "license": "ISC",
@@ -27,7 +34,11 @@
     "winston": "^2.4.2"
   },
   "devDependencies": {
+    "@types/express": "^4.16.0",
+    "@types/node": "^10.3.5",
     "chai": "^4.1.2",
-    "mocha": "^5.1.1"
+    "concurrently": "^3.6.0",
+    "mocha": "^5.1.1",
+    "nodemon": "^1.17.5"
   }
 }

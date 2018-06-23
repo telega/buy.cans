@@ -1,27 +1,30 @@
 /* eslint-disable */
 require('dotenv').config();
 var should = require('chai').should();
-const hp = require('../app/headlineProcessor');
+const hp = require('../dist/headlineProcessor');
 
 const mongoose = require('mongoose');
 const bluebird = require('bluebird');
 mongoose.Promise = bluebird;
 const dbUrl = process.env.DB_URL;
 
-// mongoose.connect(dbUrl).then(()=>{
-// 	mongoose.connection.db.dropDatabase();
-// });
+mongoose.connect(dbUrl).then(()=>{
+	mongoose.connection.db.dropDatabase();
+});
 
 
 headlineProcessor = new hp();
 
 describe('Test Headline Processor', function () {
- 	// it('should be undefined if empty', function () {
+ 	it('should be empty with nothing in db', function (done) {
 	
-	// 	let headlines = headlineProcessor.sortHeadlines()
-	// 	should.equal(headlines, undefined);
-
-	// });
+    headlineProcessor.sortLatestArticles().then((headlines)=>{
+      console.log(headlines)
+      headlines.ftArticles.should.be.empty;
+      done();
+    })
+   
+	});
 
 	// it('should get new headlines and add to db', function (done) {
 	
@@ -47,53 +50,53 @@ describe('Test Headline Processor', function () {
 	
 	//});
 
-	it('should do something with the key phrases', function(){
-		headlineProcessor.matchAndScore(
-			{ ftCloud: [ 'Switzerland',
-  'Radical reform',
-  'Apple',
-  'tn',
-  'Pret',
-  'Manger',
-  'Graduate applications',
-  'North Korea official',
-  'Trump',
-  'Soros',
-  'Europe',
-  'Italy’s new technocrat',
-  'inner populist',
-  'euro',
-  'Italy',
-  'fallout',
-  'Italian bank bond yields',
-  'Rome',
-  'Bank of Italy',
-  'asset of trust' ],
-  otherCloud: 
-[ 'Hurricane Maria',
-  'Puerto Rico',
-  'Serena Williams vs Kristyna Pliskova live score updates',
-  'referendum',
-  'Italy\'s snap elections',
-  'UK',
-  'Israeli passport',
-  'Abramovich',
-  'EDL founder Tommy Robinson',
-  'contempt of court',
-  'industrial-scale beef farming',
-  'UK',
-  'risk of new financial crisis',
-  'wake of coalition\'s collapse',
-  'Car Share\'s ending',
-  'cop',
-  'Putin',
-  'lot',
-  'Middle East',
-  'Brexit',
-  'European Union',
-  'Jacob Rees-Mogg' ]
-			}
-		)
-	})
+// 	it('should do something with the key phrases', function(){
+// 		headlineProcessor.matchAndScore(
+// 			{ ftCloud: [ 'Switzerland',
+//   'Radical reform',
+//   'Apple',
+//   'tn',
+//   'Pret',
+//   'Manger',
+//   'Graduate applications',
+//   'North Korea official',
+//   'Trump',
+//   'Soros',
+//   'Europe',
+//   'Italy’s new technocrat',
+//   'inner populist',
+//   'euro',
+//   'Italy',
+//   'fallout',
+//   'Italian bank bond yields',
+//   'Rome',
+//   'Bank of Italy',
+//   'asset of trust' ],
+//   otherCloud: 
+// [ 'Hurricane Maria',
+//   'Puerto Rico',
+//   'Serena Williams vs Kristyna Pliskova live score updates',
+//   'referendum',
+//   'Italy\'s snap elections',
+//   'UK',
+//   'Israeli passport',
+//   'Abramovich',
+//   'EDL founder Tommy Robinson',
+//   'contempt of court',
+//   'industrial-scale beef farming',
+//   'UK',
+//   'risk of new financial crisis',
+//   'wake of coalition\'s collapse',
+//   'Car Share\'s ending',
+//   'cop',
+//   'Putin',
+//   'lot',
+//   'Middle East',
+//   'Brexit',
+//   'European Union',
+//   'Jacob Rees-Mogg' ]
+// 			}
+// 		)
+// 	})
 
 });
