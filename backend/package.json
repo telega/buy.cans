@@ -1,0 +1,33 @@
+{
+  "name": "buy.cans-backend",
+  "version": "0.0.1",
+  "description": "backend server for buy.cans",
+  "main": "app/server.js",
+  "scripts": {
+    "test": "mocha  ./test/test --exit --timeout 50000"
+  },
+  "author": "Tom Allen <tom@telega.org> (http://telega.org)",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "bluebird": "^3.5.1",
+    "cognitive-services": "^1.1.0",
+    "cors": "^2.8.4",
+    "dotenv": "^5.0.1",
+    "express": "^4.16.3",
+    "express-handlebars": "^3.0.0",
+    "lodash": "^4.17.10",
+    "mongoose": "^5.1.2",
+    "mongoose-autopopulate": "^0.7.0",
+    "morgan": "^1.9.0",
+    "natural": "^0.6.1",
+    "newsapi": "^2.2.2",
+    "promise-retry": "^1.1.1",
+    "sleep-promise": "^6.0.0",
+    "winston": "^2.4.2"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.1.1"
+  }
+}
