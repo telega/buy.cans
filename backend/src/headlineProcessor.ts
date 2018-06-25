@@ -21,7 +21,6 @@ const ArticleGroup = require('./models/ArticleGroup');
 //const Article = require('./models/Article');
 const dbUrl = process.env.DB_URL;
 
-
 interface Clouds{}
 
 
@@ -56,7 +55,7 @@ class headlineProcessor {
         let documents = _.concat(ft, other);
         let body = { documents: documents };
         //let body = {"documents":[{"language":"en","id":"ft_0","text":"Radical reform: Switzerland to vote on banking overhaul"},{"language":"en","id":"ft_1","text":"The iPhone may not be what finally pushes Apple over $1tn"},{"language":"en","id":"ft_2","text":"Deal-hungry JAB to buy Pret A Manger for £1.5bn"},{"language":"en","id":"ft_3","text":"Graduate applications flood Deutsche and other banks"},{"language":"en","id":"ft_4","text":"Trump confirms top North Korea official due in US"},{"language":"en","id":"ft_5","text":"Soros on Europe: ‘Everything that could go wrong has gone wrong’"},{"language":"en","id":"ft_6","text":"Italy’s new technocrat should find his inner populist"},{"language":"en","id":"ft_7","text":"Driving Italy out of the euro makes no sense at all"},{"language":"en","id":"ft_8","text":"Italian bank bond yields surge in fallout from political turmoil"},{"language":"en","id":"ft_9","text":"Bank of Italy warns Rome is close to losing ‘asset of trust’"},{"language":"en","id":"other_0","text":"Hurricane Maria 'killed 4,600 in Puerto Rico'"},{"language":"en","id":"other_1","text":"French Open 2018: Serena Williams vs Kristyna Pliskova live score updates"},{"language":"en","id":"other_2","text":"Italy's snap elections could turn into a referendum on EU and euro"},{"language":"en","id":"other_3","text":"Abramovich cannot work in UK if he arrives on Israeli passport, No 10 says"},{"language":"en","id":"other_4","text":"EDL founder Tommy Robinson jailed for contempt of court"},{"language":"en","id":"other_5","text":"Revealed: industrial-scale beef farming comes to the UK"},{"language":"en","id":"other_6","text":"Italy at risk of new financial crisis in wake of coalition's collapse"},{"language":"en","id":"other_7","text":"Not right, and not real: Car Share's ending was a cop out"},{"language":"en","id":"other_8","text":"In the Middle East, Putin has a lot to thank Trump for"},{"language":"en","id":"other_9","text":"Britain could rejoin the European Union after Brexit, says Jacob Rees-Mogg"}]}
-        console.log(body);
+       // console.log(body);
         let headers = {
             'Content-type': 'application/json'
         };
@@ -84,7 +83,8 @@ class headlineProcessor {
         }).catch((err) => {
             logger.error(err);
         });
-    }
+	}
+	
     sortLatestArticles() {
         return ArticleGroup.findOne({})
             .sort({ 'createdAt': 'asc' })
@@ -147,7 +147,28 @@ class headlineProcessor {
         console.log(filteredUniqFtTokens.length);
         console.log(filteredUniqOtherTokens.length);
     }
-    getNewHeadlines() {
+	
+	getLatestHeadlineDate() {
+
+		return ArticleGroup.findOne({})
+		.sort({ 'createdAt': 'asc' })
+		.limit(1)
+		.exec()
+		.then((articleGroup) => {
+		if (!articleGroup) {
+			return 0;
+			;
+		}
+		return Date.parse(articleGroup.createdAt);
+	})
+		.catch((err) => {
+		if (err) {
+			logger.error(err);
+		}
+	});
+	}
+
+	getNewHeadlines(){
         return newsapi.v2.topHeadlines({
             sources: sources,
             language: 'en'
@@ -177,6 +198,6 @@ class headlineProcessor {
             .catch((err) => {
             logger.error(err);
         });
-    }
+     }
 }
 module.exports = headlineProcessor;

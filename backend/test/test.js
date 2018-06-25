@@ -8,47 +8,75 @@ const bluebird = require('bluebird');
 mongoose.Promise = bluebird;
 const dbUrl = process.env.DB_URL;
 
-mongoose.connect(dbUrl).then(()=>{
-	mongoose.connection.db.dropDatabase();
-});
-
-
 headlineProcessor = new hp();
 
+
+
+
 describe('Test Headline Processor', function () {
+
+	before('Clear DB', function(done){
+		mongoose.connect(dbUrl).then(()=>{
+		mongoose.connection.db.dropDatabase();
+		done()
+	})
+
+	})
  	it('should be empty with nothing in db', function (done) {
 	
     headlineProcessor.sortLatestArticles().then((headlines)=>{
-      console.log(headlines)
       headlines.ftArticles.should.be.empty;
       done();
     })
    
 	});
 
-	// it('should get new headlines and add to db', function (done) {
-	
-	// 	headlineProcessor.getNewHeadlines()
-	// 	.then((r)=>{
-	// 		should.exist(r);
-	// 		r.should.be.an('object');
-	// 		r.should.have.property('articles');
-	// 		done();
-	// 	});
 
+	it('should return 0 when there is nohting in the DB ', function (done) {
+	
+		headlineProcessor.getLatestHeadlineDate().then((date)=>{
+		 date.should.exist;
+	 	 date.should.be.a('number');
+		 date.should.equal(0);
+		 done();
+		})
+	   
+	});
+
+
+	it('should get new headlines and add to db', function (done) {
+	
+		headlineProcessor.getNewHeadlines(done)
+		.then((r)=>{
+			should.exist(r);
+			r.should.be.an('object');
+			r.should.have.property('articles');
+			done();
+		});
+
+	});
+
+	it('should return a date', function (done) {
+	
+		headlineProcessor.getLatestHeadlineDate().then((date)=>{
+		  date.should.exist;
+		  date.should.be.a('number');
+		  done();
+		})
+	   
+	});
+
+	// it('should be undefined if empty', function (done) {
+	
+	// 	return headlineProcessor.sortLatestArticles().then((r)=>{
+	// 		return headlineProcessor.getKeyPhrasesFromHeadlines(r).then(()=>{
+	// 			console.log('here')
+	// 			done();
+	// 		});
+	// 	})
+	// 	should.equal(headlines, undefined);
+	
 	// });
-
-	//it('should be undefined if empty', function () {
-	
-		// return headlineProcessor.sortLatestArticles().then((r)=>{
-		// 	return headlineProcessor.getKeyPhrasesFromHeadlines(r).then(()=>{
-		// 		console.log('here')
-		// 		done();
-		// 	});
-		// })
-		//should.equal(headlines, undefined);
-	
-	//});
 
 // 	it('should do something with the key phrases', function(){
 // 		headlineProcessor.matchAndScore(
