@@ -15,12 +15,14 @@ const ArticleSchema = new Schema({
 });
 
 const ArticleGroupSchema = new Schema({
-	headlineWords:{
-		type:String
-	},
-	ftHeadlineWords:{
-		type:String
-	},
+	otherTokens: [{
+		token: String,
+		matches: Boolean,
+	}],
+	ftTokens: [{
+		token: String,
+		matches: Boolean
+	}],
 	similarityScore:{
 		type: Number
 	},

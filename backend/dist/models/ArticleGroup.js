@@ -5,23 +5,26 @@ const Schema = mongoose.Schema;
 //const Article = require('./Article');
 mongoose.Promise = bluebird;
 const ArticleSchema = new Schema({
-    sourceId: String,
-    sourceName: String,
-    title: String,
-    url: String,
-    publishedAt: Date
+	sourceId: String,
+	sourceName: String,
+	title: String,
+	url: String,
+	publishedAt: Date
 });
+
 const ArticleGroupSchema = new Schema({
-    headlineWords: {
-        type: String
-    },
-    ftHeadlineWords: {
-        type: String
-    },
-    similarityScore: {
-        type: Number
-    },
-    articles: [ArticleSchema]
+	otherTokens: [{
+		token: String,
+		matches: Boolean,
+	}],
+	ftTokens: [{
+		token: String,
+		matches: Boolean
+	}],
+	similarityScore: {
+		type: Number
+	},
+	articles: [ArticleSchema]
 }, { timestamps: true });
 //ArticleGroupSchema.plugin(autopopulate);
 module.exports = mongoose.model('ArticleGroup', ArticleGroupSchema);

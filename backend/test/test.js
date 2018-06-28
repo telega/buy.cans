@@ -10,9 +10,6 @@ const dbUrl = process.env.DB_URL;
 
 headlineProcessor = new hp();
 
-
-
-
 describe('Test Headline Processor', function () {
 
 	before('Clear DB', function(done){
@@ -24,15 +21,21 @@ describe('Test Headline Processor', function () {
 	})
  	it('should be empty with nothing in db', function (done) {
 	
-    headlineProcessor.sortLatestArticles().then((headlines)=>{
-      headlines.ftArticles.should.be.empty;
-      done();
-    })
-   
+    	headlineProcessor.getLatestArticles().then((headlines)=>{
+    	  headlines.ftArticles.should.be.empty;
+    	  done();
+		})
 	});
 
-
-	it('should return 0 when there is nohting in the DB ', function (done) {
+	it('should return true if the db needs to update headlines', function(done){
+		headlineProcessor.shouldUpdateHeadlines().then((u)=>{
+			u.should.be.a('boolean');
+			u.should.equal(true);
+			done();
+		})
+	})
+	
+   	it('should return 0 when there is nohting in the DB ', function (done) {
 	
 		headlineProcessor.getLatestHeadlineDate().then((date)=>{
 		 date.should.exist;
@@ -63,9 +66,35 @@ describe('Test Headline Processor', function () {
 		  date.should.be.a('number');
 		  done();
 		})
-	   
 	});
 
+	it('should return false if the db does not need to update headlines', function(done){
+		headlineProcessor.shouldUpdateHeadlines().then((u)=>{
+			u.should.be.a('boolean');
+			u.should.equal(false);
+			done();
+		})
+	})
+
+	it('should return an array of tokenized phrases', function (done) {
+		let phrases = ['the quick', 'brown fox jumped', 'over the lazy dogs'];
+		let tokens = headlineProcessor.tokenizePhrases(phrases)
+		tokens.should.exist;
+		tokens.should.be.an('array');
+		done();
+	});
+
+
+	it('should return an object with two arrays of matched clouds', function (done) {
+		let clouds = {ftCloud: ['quick', 'brown', 'dogs'], otherCloud: ['quick','fox']};
+		let matched = headlineProcessor.matchClouds(clouds);
+		matched.should.exist;
+		matched.should.be.an('object');
+		done();
+	});
+
+
+	
 	// it('should be undefined if empty', function (done) {
 	
 	// 	return headlineProcessor.sortLatestArticles().then((r)=>{

@@ -12,6 +12,7 @@ const textAnalyticsClient = new cognitiveServices.textAnalytics({
 });
 const natural = require('natural');
 const tokenizer = new natural.WordTokenizer();
+const stopWords = ["a", "able", "about", "across", "after", "all", "almost", "also", "am", "among", "an", "and", "any", "are", "as", "at", "be", "because", "been", "but", "by", "can", "cannot", "could", "dear", "did", "do", "does", "either", "else", "ever", "every", "for", "from", "get", "got", "had", "has", "have", "he", "her", "hers", "him", "his", "how", "however", "i", "if", "in", "into", "is", "it", "its", "just", "least", "let", "like", "likely", "may", "me", "might", "most", "must", "my", "neither", "no", "nor", "not", "of", "off", "often", "on", "only", "or", "other", "our", "own", "rather", "said", "say", "says", "she", "should", "since", "so", "some", "than", "that", "the", "their", "them", "then", "there", "these", "they", "this", "tis", "to", "too", "twas", "us", "wants", "was", "we", "were", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "would", "yet", "you", "your", "ain't", "aren't", "can't", "could've", "couldn't", "didn't", "doesn't", "don't", "hasn't", "he'd", "he'll", "he's", "how'd", "how'll", "how's", "i'd", "i'll", "i'm", "i've", "isn't", "it's", "might've", "mightn't", "must've", "mustn't", "shan't", "she'd", "she'll", "she's", "should've", "shouldn't", "that'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "wasn't", "we'd", "we'll", "we're", "weren't", "what'd", "what's", "when'd", "when'll", "when's", "where'd", "where'll", "where's", "who'd", "who'll", "who's", "why'd", "why'll", "why's", "won't", "would've", "wouldn't", "you'd", "you'll", "you're", "you've"]
 //const logger = require('./logger');
 const _ = require('lodash');
 const mongoose = require('mongoose');
@@ -21,8 +22,12 @@ const ArticleGroup = require('./models/ArticleGroup');
 //const Article = require('./models/Article');
 const dbUrl = process.env.DB_URL;
 
-interface Clouds{}
 
+
+interface Clouds{
+	ftCloud: Array<string>,
+	otherCloud: Array<string>,
+};
 
 interface Article{
     title: string,
@@ -36,7 +41,8 @@ interface Articles{
 class headlineProcessor {
     constructor() {
         mongoose.connect(dbUrl);
-    }
+	}
+	
     getKeyPhrasesFromHeadlines(articles: Articles) {
         let ft = articles.ftArticles.map((article, i) => {
             return {
@@ -78,14 +84,33 @@ class headlineProcessor {
                 else {
                     otherCloud = _.concat(otherCloud, document.keyPhrases);
                 }
-            });
+			});
+
             return { ftCloud, otherCloud };
         }).catch((err) => {
             logger.error(err);
         });
 	}
+
+	tokenizePhrases(phrases: Array<string>){
+		let tokenizedPhrases = [];
+		
+        phrases.forEach((phrase) => {
+            let tokens = tokenizer.tokenize(phrase);
+            tokenizedPhrases = _.concat(tokenizedPhrases, tokens);
+		});
+		
+		let uniqTokenizedPhrases = _.uniq(tokenizedPhrases);
+		
+        let filteredUniqTokenizedPhrases = uniqTokenizedPhrases.filter((token) => {
+			let idx = stopWords.indexOf(token);
+			return ( (token.length > 2) && (idx === -1) ) ;
+        });
+	   
+		return filteredUniqTokenizedPhrases;
+	}
 	
-    sortLatestArticles() {
+    getLatestArticles() {
         return ArticleGroup.findOne({})
             .sort({ 'createdAt': 'asc' })
             .limit(1)
@@ -93,7 +118,6 @@ class headlineProcessor {
             .then((articleGroup) => {
             if (!articleGroup) {
                 return { ftArticles: [], otherArticles: [] };
-                ;
             }
             let ftArticles = articleGroup.articles.filter((article) => {
                 return article.sourceId === 'financial-times';
@@ -108,47 +132,45 @@ class headlineProcessor {
                 logger.error(err);
             }
         });
-    }
-    matchAndScore(clouds) {
-        //console.log(clouds);
-        let ftCloud = clouds.ftCloud;
-        let otherCloud = clouds.otherCloud;
-        console.log(otherCloud);
-        let ftCloudTokenized = [];
-        let otherCloudTokenized = [];
-        ftCloud.forEach((ftPhrase) => {
-            let tokens = tokenizer.tokenize(ftPhrase);
-            ftCloudTokenized = _.concat(ftCloudTokenized, tokens);
-        });
-        //console.log(ftCloudTokenized);
-        otherCloud.forEach((otherPhrase) => {
-            let tokens = tokenizer.tokenize(otherPhrase);
-            otherCloudTokenized = _.concat(otherCloudTokenized, tokens);
-        });
-        //console.log(otherCloudTokenized)
-        let uniqFtTokens = _.uniq(ftCloudTokenized);
-        let uniqOtherTokens = _.uniq(otherCloudTokenized);
-        let filteredUniqFtTokens = uniqFtTokens.filter((token) => {
-            return token.length >= 4;
-        });
-        let filteredUniqOtherTokens = uniqOtherTokens.filter((token) => {
-            return token.length >= 4;
-        });
-        //console.log(uniqFtTokens);
-        filteredUniqFtTokens.forEach((ftPhrase) => {
-            filteredUniqOtherTokens.forEach((otherPhrase) => {
-                let score = natural.JaroWinklerDistance(ftPhrase, otherPhrase);
-                if (score >= 0.9) {
-                    console.log(score);
-                    console.log(ftPhrase + ' : ' + otherPhrase);
-                }
-            });
-        });
-        console.log(filteredUniqFtTokens.length);
-        console.log(filteredUniqOtherTokens.length);
+	}
+	
+    matchClouds(clouds: Clouds) {   
+		// this is pretty expensive
+
+		let targetScore = 0.9;
+
+		let matchedFtCloud = clouds.ftCloud.map((ftPhrase)=>{
+
+			let scores = clouds.otherCloud.map((otherPhrase)=>{
+				return natural.JaroWinklerDistance(ftPhrase, otherPhrase);
+			})
+
+			let maxScore = Math.max.apply(null,scores);
+			if (maxScore >= targetScore){
+				return {token: ftPhrase, matched: true}
+			} else {
+				return {token: ftPhrase, matched: false}
+			}
+		})
+
+		let matchedOtherCloud = clouds.otherCloud.map((otherPhrase)=>{
+			let scores = clouds.ftCloud.map((ftPhrase)=>{
+				return natural.JaroWinklerDistance(otherPhrase, ftPhrase);
+			})
+
+			let maxScore = Math.max.apply(null,scores);
+
+			if (maxScore >= targetScore){
+				return {token: otherPhrase, matched: true}
+			} else {
+				return {token: otherPhrase, matched: false}
+			}
+		})
+		return {matchedFtCloud, matchedOtherCloud}
+
     }
 	
-	getLatestHeadlineDate() {
+	getLatestHeadlineDate(){
 
 		return ArticleGroup.findOne({})
 		.sort({ 'createdAt': 'asc' })
@@ -168,6 +190,23 @@ class headlineProcessor {
 	});
 	}
 
+	shouldUpdateHeadlines(){
+
+		return this.getLatestHeadlineDate()
+			.then((date) => {
+				if( (Date.now() - 432000 ) >= date ){   // 2hrs
+					return true;
+				} else {
+					return false;
+				}
+			})
+			.catch((err)=>{
+				if(err){
+					logger.error(err);
+			}
+		})
+	}
+	
 	getNewHeadlines(){
         return newsapi.v2.topHeadlines({
             sources: sources,
