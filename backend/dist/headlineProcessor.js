@@ -13,7 +13,7 @@ const textAnalyticsClient = new cognitiveServices.textAnalytics({
 const natural = require('natural');
 const tokenizer = new natural.WordTokenizer();
 const stopWords = ["a", "able", "about", "across", "after", "all", "almost", "also", "am", "among", "an", "and", "any", "are", "as", "at", "be", "because", "been", "but", "by", "can", "cannot", "could", "dear", "did", "do", "does", "either", "else", "ever", "every", "for", "from", "get", "got", "had", "has", "have", "he", "her", "hers", "him", "his", "how", "however", "i", "if", "in", "into", "is", "it", "its", "just", "least", "let", "like", "likely", "may", "me", "might", "most", "must", "my", "neither", "no", "nor", "not", "of", "off", "often", "on", "only", "or", "other", "our", "own", "rather", "said", "say", "says", "she", "should", "since", "so", "some", "than", "that", "the", "their", "them", "then", "there", "these", "they", "this", "tis", "to", "too", "twas", "us", "wants", "was", "we", "were", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "would", "yet", "you", "your", "ain't", "aren't", "can't", "could've", "couldn't", "didn't", "doesn't", "don't", "hasn't", "he'd", "he'll", "he's", "how'd", "how'll", "how's", "i'd", "i'll", "i'm", "i've", "isn't", "it's", "might've", "mightn't", "must've", "mustn't", "shan't", "she'd", "she'll", "she's", "should've", "shouldn't", "that'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "wasn't", "we'd", "we'll", "we're", "weren't", "what'd", "what's", "when'd", "when'll", "when's", "where'd", "where'll", "where's", "who'd", "who'll", "who's", "why'd", "why'll", "why's", "won't", "would've", "wouldn't", "you'd", "you'll", "you're", "you've"];
-//const logger = require('./logger');
+const logg = require('./logger');
 const _ = require('lodash');
 const mongoose = require('mongoose');
 const bluebird = require('bluebird');
@@ -23,10 +23,60 @@ const ArticleGroup = require('./models/ArticleGroup');
 const dbUrl = process.env.DB_URL;
 ;
 ;
-;
 class headlineProcessor {
     constructor() {
         mongoose.connect(dbUrl);
+    }
+    createNewArticleGroup() {
+        return this.shouldUpdateHeadlines()
+            .then((u) => {
+            if (!u) {
+                throw new Error('Nothing to Update');
+            }
+            return this.getNewHeadlines()
+                .then((articleGroup) => {
+                let articles = this.getLatestArticlesFromGroup(articleGroup);
+                return [articles, articleGroup];
+            })
+                .then(([articles, articleGroup]) => {
+                return this.getKeyPhrasesFromHeadlines(articles)
+                    .then((keyPhrases) => {
+                    return [keyPhrases, articleGroup];
+                });
+            })
+                .then(([keyPhrases, articleGroup]) => {
+                let toeknizedFtCloud = this.tokenizePhrases(keyPhrases.ftCloud);
+                let tokenizedOtherCloud = this.tokenizePhrases(keyPhrases.otherCloud);
+                let ftCloud = toeknizedFtCloud.map((phrase) => {
+                    return { token: phrase };
+                });
+                let otherCloud = tokenizedOtherCloud.map((phrase) => {
+                    return { token: phrase };
+                });
+                let matchedClouds = this.matchClouds({ terms: ftCloud }, { terms: otherCloud });
+                return [matchedClouds, articleGroup];
+            })
+                .then(([matchedClouds, articleGroup]) => {
+                let score = this.scoreClouds(matchedClouds.matchedFtCloud, matchedClouds.matchedOtherCloud);
+                articleGroup.similarityScore = score;
+                articleGroup.ftTokens = matchedClouds.matchedFtCloud;
+                articleGroup.otherTokens = matchedClouds.matchedOtherCloud;
+                return articleGroup.save();
+            })
+                .catch((err) => {
+                if (err) {
+                    logg.error(err);
+                }
+            });
+        })
+            .then((ag) => {
+            return ag;
+        })
+            .catch((err) => {
+            if (err) {
+                logg.error(err);
+            }
+        });
     }
     getKeyPhrasesFromHeadlines(articles) {
         let ft = articles.ftArticles.map((article, i) => {
@@ -45,8 +95,6 @@ class headlineProcessor {
         });
         let documents = _.concat(ft, other);
         let body = { documents: documents };
-        //let body = {"documents":[{"language":"en","id":"ft_0","text":"Radical reform: Switzerland to vote on banking overhaul"},{"language":"en","id":"ft_1","text":"The iPhone may not be what finally pushes Apple over $1tn"},{"language":"en","id":"ft_2","text":"Deal-hungry JAB to buy Pret A Manger for £1.5bn"},{"language":"en","id":"ft_3","text":"Graduate applications flood Deutsche and other banks"},{"language":"en","id":"ft_4","text":"Trump confirms top North Korea official due in US"},{"language":"en","id":"ft_5","text":"Soros on Europe: ‘Everything that could go wrong has gone wrong’"},{"language":"en","id":"ft_6","text":"Italy’s new technocrat should find his inner populist"},{"language":"en","id":"ft_7","text":"Driving Italy out of the euro makes no sense at all"},{"language":"en","id":"ft_8","text":"Italian bank bond yields surge in fallout from political turmoil"},{"language":"en","id":"ft_9","text":"Bank of Italy warns Rome is close to losing ‘asset of trust’"},{"language":"en","id":"other_0","text":"Hurricane Maria 'killed 4,600 in Puerto Rico'"},{"language":"en","id":"other_1","text":"French Open 2018: Serena Williams vs Kristyna Pliskova live score updates"},{"language":"en","id":"other_2","text":"Italy's snap elections could turn into a referendum on EU and euro"},{"language":"en","id":"other_3","text":"Abramovich cannot work in UK if he arrives on Israeli passport, No 10 says"},{"language":"en","id":"other_4","text":"EDL founder Tommy Robinson jailed for contempt of court"},{"language":"en","id":"other_5","text":"Revealed: industrial-scale beef farming comes to the UK"},{"language":"en","id":"other_6","text":"Italy at risk of new financial crisis in wake of coalition's collapse"},{"language":"en","id":"other_7","text":"Not right, and not real: Car Share's ending was a cop out"},{"language":"en","id":"other_8","text":"In the Middle East, Putin has a lot to thank Trump for"},{"language":"en","id":"other_9","text":"Britain could rejoin the European Union after Brexit, says Jacob Rees-Mogg"}]}
-        // console.log(body);
         let headers = {
             'Content-type': 'application/json'
         };
@@ -72,7 +120,7 @@ class headlineProcessor {
             });
             return { ftCloud, otherCloud };
         }).catch((err) => {
-            logger.error(err);
+            logg.error(err);
         });
     }
     tokenizePhrases(phrases) {
@@ -107,16 +155,25 @@ class headlineProcessor {
         })
             .catch((err) => {
             if (err) {
-                logger.error(err);
+                logg.error(err);
             }
         });
     }
-    matchClouds(clouds) {
+    getLatestArticlesFromGroup(articleGroup) {
+        let ftArticles = articleGroup.articles.filter((article) => {
+            return article.sourceId === 'financial-times';
+        });
+        let otherArticles = articleGroup.articles.filter((article) => {
+            return article.sourceId != 'financial-times';
+        });
+        return { ftArticles: ftArticles, otherArticles: otherArticles };
+    }
+    matchClouds(ftCloud, otherCloud) {
         // this is pretty expensive
         let targetScore = 0.9;
-        let matchedFtCloud = clouds.ftCloud.map((ftPhrase) => {
-            let scores = clouds.otherCloud.map((otherPhrase) => {
-                return natural.JaroWinklerDistance(ftPhrase, otherPhrase);
+        let matchedFtCloud = ftCloud.terms.map((ftPhrase) => {
+            let scores = otherCloud.terms.map((otherPhrase) => {
+                return natural.JaroWinklerDistance(ftPhrase.token, otherPhrase.token);
             });
             let maxScore = Math.max.apply(null, scores);
             if (maxScore >= targetScore) {
@@ -126,9 +183,9 @@ class headlineProcessor {
                 return { token: ftPhrase, matched: false };
             }
         });
-        let matchedOtherCloud = clouds.otherCloud.map((otherPhrase) => {
-            let scores = clouds.ftCloud.map((ftPhrase) => {
-                return natural.JaroWinklerDistance(otherPhrase, ftPhrase);
+        let matchedOtherCloud = otherCloud.terms.map((otherPhrase) => {
+            let scores = ftCloud.terms.map((ftPhrase) => {
+                return natural.JaroWinklerDistance(otherPhrase.token, ftPhrase.token);
             });
             let maxScore = Math.max.apply(null, scores);
             if (maxScore >= targetScore) {
@@ -138,7 +195,18 @@ class headlineProcessor {
                 return { token: otherPhrase, matched: false };
             }
         });
-        return { matchedFtCloud, matchedOtherCloud };
+        return { matchedFtCloud: { terms: matchedFtCloud }, matchedOtherCloud: { terms: matchedOtherCloud } };
+    }
+    scoreClouds(matchedFtCloud, matchedOtherCloud) {
+        let termsCount = matchedFtCloud.terms.length + matchedOtherCloud.terms.length;
+        let reducedFtCloud = matchedFtCloud.terms.filter((term) => {
+            return term.matched === true;
+        });
+        let reducedOtherCloud = matchedOtherCloud.terms.filter((term) => {
+            return term.matched === true;
+        });
+        let matchedTermsCount = reducedFtCloud.length + reducedOtherCloud.length;
+        return matchedTermsCount / termsCount;
     }
     getLatestHeadlineDate() {
         return ArticleGroup.findOne({})
@@ -154,7 +222,7 @@ class headlineProcessor {
         })
             .catch((err) => {
             if (err) {
-                logger.error(err);
+                logg.error(err);
             }
         });
     }
@@ -170,7 +238,7 @@ class headlineProcessor {
         })
             .catch((err) => {
             if (err) {
-                logger.error(err);
+                logg.error(err);
             }
         });
     }
@@ -202,7 +270,7 @@ class headlineProcessor {
             return articleGroup;
         })
             .catch((err) => {
-            logger.error(err);
+            logg.error(err);
         });
     }
 }

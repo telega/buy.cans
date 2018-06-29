@@ -4,7 +4,7 @@
   "description": "backend server for buy.cans",
   "main": "dist/server.js",
   "scripts": {
-    "test": "yarn run build && DB_URL=mongodb://localhost:27017/buycans_test mocha ./test/test --exit --timeout 2000",
+    "test": "yarn run build && DB_URL=mongodb://localhost:27017/buycans_test mocha ./test/test --exit --timeout 4000",
     "start": "yarn run serve",
     "build": "yarn run build-ts",
     "serve": "node dist/server.js",

@@ -10,6 +10,7 @@ const dbUrl = process.env.DB_URL;
 
 headlineProcessor = new hp();
 
+
 describe('Test Headline Processor', function () {
 
 	before('Clear DB', function(done){
@@ -86,74 +87,42 @@ describe('Test Headline Processor', function () {
 
 
 	it('should return an object with two arrays of matched clouds', function (done) {
-		let clouds = {ftCloud: ['quick', 'brown', 'dogs'], otherCloud: ['quick','fox']};
-		let matched = headlineProcessor.matchClouds(clouds);
+		//let clouds = {ftCloud: ['quick', 'brown', 'dogs'], otherCloud: ['quick','fox']};
+		let matched = headlineProcessor.matchClouds({terms:[{token: 'quick'}, {token:'brown'}, {token:'dogs'} ]},{terms: [{token:'quick'},{token:'fox'}]});
 		matched.should.exist;
 		matched.should.be.an('object');
 		done();
 	});
 
+	it('should return a score for the clouds', function(done){
+		let matched = headlineProcessor.matchClouds({terms:[{token: 'quick'}, {token:'brown'}, {token:'dogs'} ]},{terms: [{token:'quick'},{token:'fox'}]});
+		let score = headlineProcessor.scoreClouds(matched.matchedFtCloud, matched.matchedOtherCloud);
+		score.should.exist;
+		score.should.be.a('number');
+		done();
+	})
 
-	
-	// it('should be undefined if empty', function (done) {
-	
-	// 	return headlineProcessor.sortLatestArticles().then((r)=>{
-	// 		return headlineProcessor.getKeyPhrasesFromHeadlines(r).then(()=>{
-	// 			console.log('here')
-	// 			done();
-	// 		});
-	// 	})
-	// 	should.equal(headlines, undefined);
-	
-	// });
 
-// 	it('should do something with the key phrases', function(){
-// 		headlineProcessor.matchAndScore(
-// 			{ ftCloud: [ 'Switzerland',
-//   'Radical reform',
-//   'Apple',
-//   'tn',
-//   'Pret',
-//   'Manger',
-//   'Graduate applications',
-//   'North Korea official',
-//   'Trump',
-//   'Soros',
-//   'Europe',
-//   'Italy’s new technocrat',
-//   'inner populist',
-//   'euro',
-//   'Italy',
-//   'fallout',
-//   'Italian bank bond yields',
-//   'Rome',
-//   'Bank of Italy',
-//   'asset of trust' ],
-//   otherCloud: 
-// [ 'Hurricane Maria',
-//   'Puerto Rico',
-//   'Serena Williams vs Kristyna Pliskova live score updates',
-//   'referendum',
-//   'Italy\'s snap elections',
-//   'UK',
-//   'Israeli passport',
-//   'Abramovich',
-//   'EDL founder Tommy Robinson',
-//   'contempt of court',
-//   'industrial-scale beef farming',
-//   'UK',
-//   'risk of new financial crisis',
-//   'wake of coalition\'s collapse',
-//   'Car Share\'s ending',
-//   'cop',
-//   'Putin',
-//   'lot',
-//   'Middle East',
-//   'Brexit',
-//   'European Union',
-//   'Jacob Rees-Mogg' ]
-// 			}
-// 		)
-// 	})
 
 });
+
+
+describe('Test Headline Processor', function () {
+
+	before('Clear DB', function(done){
+		mongoose.connect(dbUrl).then(()=>{
+		mongoose.connection.db.dropDatabase();
+		done()
+	})
+
+	})
+ 	it('Should create a complete Article Group', function (done) {
+	
+		headlineProcessor.createNewArticleGroup().then((ag)=>{
+			should.exist(ag);
+			done();
+		})
+		
+	});
+
+})
