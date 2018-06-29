@@ -216,7 +216,6 @@ class headlineProcessor {
             .then((articleGroup) => {
             if (!articleGroup) {
                 return 0;
-                ;
             }
             return Date.parse(articleGroup.createdAt);
         })

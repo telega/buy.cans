@@ -53,6 +53,8 @@ class headlineProcessor {
         mongoose.connect(dbUrl);
 	}
 	
+
+
 	createNewArticleGroup(){
 
 		return this.shouldUpdateHeadlines()
@@ -275,17 +277,16 @@ class headlineProcessor {
 		.limit(1)
 		.exec()
 		.then((articleGroup) => {
-		if (!articleGroup) {
-			return 0;
-			;
-		}
-		return Date.parse(articleGroup.createdAt);
-	})
+			if (!articleGroup) {
+				return 0;
+			}
+			return Date.parse(articleGroup.createdAt);
+		})
 		.catch((err) => {
-		if (err) {
-			logg.error(err);
-		}
-	});
+			if (err) {
+				logg.error(err);
+			}
+		});
 	}
 
 	shouldUpdateHeadlines(){
