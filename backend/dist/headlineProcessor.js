@@ -59,8 +59,20 @@ class headlineProcessor {
                 .then(([matchedClouds, articleGroup]) => {
                 let score = this.scoreClouds(matchedClouds.matchedFtCloud, matchedClouds.matchedOtherCloud);
                 articleGroup.similarityScore = score;
-                articleGroup.ftTokens = matchedClouds.matchedFtCloud;
-                articleGroup.otherTokens = matchedClouds.matchedOtherCloud;
+                matchedClouds.matchedFtCloud.terms.forEach((term) => {
+                    articleGroup.ftTokens.push({
+                        token: term.token,
+                        matched: term.matched
+                    });
+                });
+                matchedClouds.matchedOtherCloud.terms.forEach((term) => {
+                    articleGroup.otherTokens.push({
+                        token: term.token,
+                        matched: term.matched
+                    });
+                });
+                //articleGroup.ftTokens = matchedClouds.matchedFtCloud;
+                //articleGroup.otherTokens = matchedClouds.matchedOtherCloud;
                 return articleGroup.save();
             })
                 .catch((err) => {
@@ -177,10 +189,10 @@ class headlineProcessor {
             });
             let maxScore = Math.max.apply(null, scores);
             if (maxScore >= targetScore) {
-                return { token: ftPhrase, matched: true };
+                return { token: ftPhrase.token, matched: true };
             }
             else {
-                return { token: ftPhrase, matched: false };
+                return { token: ftPhrase.token, matched: false };
             }
         });
         let matchedOtherCloud = otherCloud.terms.map((otherPhrase) => {
@@ -189,10 +201,10 @@ class headlineProcessor {
             });
             let maxScore = Math.max.apply(null, scores);
             if (maxScore >= targetScore) {
-                return { token: otherPhrase, matched: true };
+                return { token: otherPhrase.token, matched: true };
             }
             else {
-                return { token: otherPhrase, matched: false };
+                return { token: otherPhrase.token, matched: false };
             }
         });
         return { matchedFtCloud: { terms: matchedFtCloud }, matchedOtherCloud: { terms: matchedOtherCloud } };

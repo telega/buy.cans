@@ -17,11 +17,11 @@ const ArticleSchema = new Schema({
 const ArticleGroupSchema = new Schema({
 	otherTokens: [{
 		token: String,
-		matches: Boolean,
+		matched: Boolean,
 	}],
 	ftTokens: [{
 		token: String,
-		matches: Boolean
+		matched: Boolean
 	}],
 	similarityScore:{
 		type: Number
