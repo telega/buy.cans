@@ -68,16 +68,30 @@ class headlineProcessor {
 						return [articles, articleGroup];
 					})
 					.then(([articles, articleGroup])=>{
-						return this.getKeyPhrasesFromHeadlines(articles)
-							.then((keyPhrases)=>{
-								return [keyPhrases, articleGroup]
-							});
+						
+						let ftCloud = articles.ftArticles.map((article: Article)=>{
+								return article.title;
+						});
+						
+						let otherCloud = articles.otherArticles.map((article:Article)=>{
+							return article.title;
+						})
+						
+						let keyPhrases = {
+							ftCloud,
+							otherCloud
+						}
+
+						return [keyPhrases, articleGroup]
+							
 					})
 					.then(([keyPhrases, articleGroup])=>{
-						let toeknizedFtCloud = this.tokenizePhrases( keyPhrases.ftCloud );
+						//console.log(keyPhrases)
+
+						let tokenizedFtCloud = this.tokenizePhrases( keyPhrases.ftCloud );
 						let tokenizedOtherCloud = this.tokenizePhrases( keyPhrases.otherCloud);
 
-						let ftCloud = toeknizedFtCloud.map((phrase)=>{
+						let ftCloud = tokenizedFtCloud.map((phrase)=>{
 							return {token: phrase};
 						});
 						let otherCloud = tokenizedOtherCloud.map((phrase)=>{
@@ -131,6 +145,7 @@ class headlineProcessor {
 		
 	}
 
+	//deprecated 
     getKeyPhrasesFromHeadlines(articles: Articles) {
         let ft = articles.ftArticles.map((article, i) => {
             return {
@@ -229,7 +244,6 @@ class headlineProcessor {
             let otherArticles = articleGroup.articles.filter((article) => {
                 return article.sourceId != 'financial-times';
 			});
-			
             return { ftArticles: ftArticles, otherArticles: otherArticles };
         
 	}
