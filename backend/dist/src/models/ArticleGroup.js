@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 /// <reference path="promise-bluebird.d.ts" />
 const mongoose_1 = require("mongoose");
 //import {IArticle, IToken} from '../interfaces/article';
@@ -15,6 +16,10 @@ const TokenSchema = new mongoose_1.Schema({
     ignore: Boolean
 });
 const ArticleSchema = new mongoose_1.Schema({
+    frogs: {
+        type: String,
+        default: 'a few'
+    },
     sourceId: String,
     sourceName: String,
     title: String,
@@ -30,5 +35,4 @@ const ArticleGroupSchema = new mongoose_1.Schema({
     articles: [ArticleSchema]
 }, { timestamps: true });
 //ArticleGroupSchema.plugin(autopopulate);
-const ArticleGroup = mongoose_1.model('ArticleGroup', ArticleGroupSchema);
-module.exports = ArticleGroup;
+exports.ArticleGroup = mongoose_1.model('ArticleGroup', ArticleGroupSchema);

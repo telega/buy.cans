@@ -22,9 +22,10 @@ describe('Test Headline Processor', function () {
 	})
  	it('should be empty with nothing in db', function (done) {
 	
-    	headlineProcessor.getLatestArticles().then((headlines)=>{
-    	  headlines.ftArticles.should.be.empty;
-    	  done();
+    	headlineProcessor.getLatestArticles().then((articles)=>{
+			articles.should.be.an('array');
+    	  	articles.should.be.empty;
+    	  	done();
 		})
 	});
 
@@ -39,10 +40,10 @@ describe('Test Headline Processor', function () {
    	it('should return 0 when there is nohting in the DB ', function (done) {
 	
 		headlineProcessor.getLatestHeadlineDate().then((date)=>{
-		 date.should.exist;
-	 	 date.should.be.a('number');
-		 date.should.equal(0);
-		 done();
+			date.should.exist;
+	 		date.should.be.a('number');
+			date.should.equal(0);
+			done();
 		})
 	   
 	});
@@ -85,7 +86,6 @@ describe('Test Headline Processor', function () {
 		done();
 	});
 
-
 	it('should return an object with two arrays of matched clouds', function (done) {
 		//let clouds = {ftCloud: ['quick', 'brown', 'dogs'], otherCloud: ['quick','fox']};
 		let matched = headlineProcessor.matchClouds({terms:[{token: 'quick'}, {token:'brown'}, {token:'dogs'} ]},{terms: [{token:'quick'},{token:'fox'}]});
@@ -102,27 +102,25 @@ describe('Test Headline Processor', function () {
 		done();
 	})
 
-
-
 });
 
 
-describe('Test Headline Processor', function () {
+// describe('Test Headline Processor', function () {
 
-	before('Clear DB', function(done){
-		mongoose.connect(dbUrl).then(()=>{
-		mongoose.connection.db.dropDatabase();
-		done()
-	})
+// 	before('Clear DB', function(done){
+// 			mongoose.connect(dbUrl).then(()=>{
+// 			mongoose.connection.db.dropDatabase();
+// 			done()
+// 		})
+// 	})
 
-	})
- 	it('Should create a complete Article Group', function (done) {
+//  	it('Should create a complete Article Group', function (done) {
 	
-		headlineProcessor.createNewArticleGroup().then((ag)=>{
-			should.exist(ag);
-			done();
-		})
+// 		headlineProcessor.createNewArticleGroup().then((ag)=>{
+// 			should.exist(ag);
+// 			done();
+// 		})
 		
-	});
+// 	});
 
-})
+// })

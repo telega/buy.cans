@@ -54,6 +54,77 @@ class headlineProcessor {
 	}
 	
 
+	// matchTokenToCloud(token, cloud){
+	// 	const targetScore = 0.9;
+
+	// 	let newToken = {
+	// 		token: token.token,
+	// 		matched: false
+	// 	}
+
+	// 	let scores = cloud.map((cloudToken)=>{
+	// 		return natural.JaroWinklerDistance(token.token, cloudToken.token)
+	// 	})
+
+	// 	let maxScore = Math.max.apply(null,scores);
+
+	// 	if (maxScore >= targetScore){
+	// 		newToken.matched =  true;
+	// 	}
+	// 	return newToken;
+	// }
+
+	scoreToken(token, tokenArray){
+		let scores = tokenArray.map((t)=>{
+			return natural.JaroWinklerDistance(token.token, t.token)
+		})
+		return Math.max.apply(null,scores);
+	}
+
+
+	matchTokensAndScoreHeadline(sourceHeadlineTokens, targetHeadlines){
+
+		let matchedHeadlineTokens= sourceHeadlineTokens;
+
+		let filteredUniqTokenizedTitle = _.uniq(sourceHeadlineTokens).filter((token) => {
+			let idx = stopWords.indexOf(token.token);
+			return ( (token.length > 2) && (idx === -1) ) ;
+		});
+
+		targetHeadlines.forEach((targetHeadline)=>{
+
+			let matchedTokens = filteredUniqTokenizedTitle.map((token)=>{
+				let score = this.scoreToken(token, targetHeadline);
+
+				token.matched = false;
+
+				if(score >= 0.9){
+					token.matched = true;
+				} 
+				return token;
+
+			})
+
+			matchedTokens.forEach((token)=>{
+				let idx = _.findIndex(matchedHeadlineTokens, {'token':token.token}); // oh dear
+
+				if(idx != 0  && token.matched == true){
+					matchedHeadlineTokens[0].matched = true;
+				}
+			})			
+
+			
+		})
+
+		let matchedCount = matchedHeadlineTokens.filter((token)=>{
+			return token.matched == true;
+		})
+
+		let headlineScore = matchedCount.length / filteredUniqTokenizedTitle.length;
+
+		return {matchedHeadlineTokens, headlineScore };
+	}
+
 
 	createNewArticleGroup(){
 
@@ -68,64 +139,78 @@ class headlineProcessor {
 						return [articles, articleGroup];
 					})
 					.then(([articles, articleGroup])=>{
-						
-						let ftCloud = articles.ftArticles.map((article: Article)=>{
-								return article.title;
-						});
-						
-						let otherCloud = articles.otherArticles.map((article:Article)=>{
-							return article.title;
+
+						console.log(articles.ftArticles)
+
+						let ftCloud = articles.ftArticles.map((ftArticle)=>{
+							return ftArticle.tokenizedTitle.map((token)=>{
+								return token.token;
+							})
 						})
+
+						ftCloud = _.flatten(ftCloud);
+
+						console.log(ftCloud)
+
+						// let otherArticles = articles.otherArticles.map((oArticle)=>{
+							
+						// 	let matched = articles.ftArticles.map((fArticle)=>{
+						// 		this.matchClouds(fArticle.tokenizedTitle,oArticle.tokenizedTitle);
+						// 	})	
+
+
+														
+						// })
 						
 						let keyPhrases = {
 							ftCloud,
-							otherCloud
+							//otherCloud
 						}
 
 						return [keyPhrases, articleGroup]
 							
 					})
-					.then(([keyPhrases, articleGroup])=>{
-						//console.log(keyPhrases)
+					// .then(([keyPhrases, articleGroup])=>{
+					// 	//console.log(keyPhrases)
 
-						let tokenizedFtCloud = this.tokenizePhrases( keyPhrases.ftCloud );
-						let tokenizedOtherCloud = this.tokenizePhrases( keyPhrases.otherCloud);
+					// 	let tokenizedFtCloud = this.tokenizePhrases( keyPhrases.ftCloud );
+					// 	let tokenizedOtherCloud = this.tokenizePhrases( keyPhrases.otherCloud);
 
-						let ftCloud = tokenizedFtCloud.map((phrase)=>{
-							return {token: phrase};
-						});
-						let otherCloud = tokenizedOtherCloud.map((phrase)=>{
-							return {token:phrase};
-						});
+					// 	let ftCloud = tokenizedFtCloud.map((phrase)=>{
+					// 		return {token: phrase};
+					// 	});
+					// 	let otherCloud = tokenizedOtherCloud.map((phrase)=>{
+					// 		return {token:phrase};
+					// 	});
 
-						let matchedClouds = this.matchClouds({terms:ftCloud},{terms: otherCloud});
+					// 	let matchedClouds = this.matchClouds({terms:ftCloud},{terms: otherCloud});
 
-						return [matchedClouds, articleGroup];
-					})
-					.then(([matchedClouds, articleGroup])=>{
-						let score = this.scoreClouds(matchedClouds.matchedFtCloud, matchedClouds.matchedOtherCloud)
+					// 	return [matchedClouds, articleGroup];
+					// })
+					// .then(([matchedClouds, articleGroup])=>{
+					// 	let score = this.scoreClouds(matchedClouds.matchedFtCloud, matchedClouds.matchedOtherCloud)
 
-						articleGroup.similarityScore = score;
-						matchedClouds.matchedFtCloud.terms.forEach((term)=>{
-							articleGroup.ftTokens.push({
-								token: term.token,
-								matched: term.matched
-							});
-						});
+					// 	articleGroup.similarityScore = score;
+					// 	matchedClouds.matchedFtCloud.terms.forEach((term)=>{
+					// 		articleGroup.ftTokens.push({
+					// 			token: term.token,
+					// 			matched: term.matched
+					// 		});
+					// 	});
 
-						matchedClouds.matchedOtherCloud.terms.forEach((term)=>{
-							articleGroup.otherTokens.push({
-								token: term.token,
-								matched: term.matched
-							});
-						});
+					// 	matchedClouds.matchedOtherCloud.terms.forEach((term)=>{
+					// 		articleGroup.otherTokens.push({
+					// 			token: term.token,
+					// 			matched: term.matched
+					// 		});
+					// 	});
 
-						//articleGroup.ftTokens = matchedClouds.matchedFtCloud;
-						//articleGroup.otherTokens = matchedClouds.matchedOtherCloud;
+					// 	//articleGroup.ftTokens = matchedClouds.matchedFtCloud;
+					// 	//articleGroup.otherTokens = matchedClouds.matchedOtherCloud;
 
-						return articleGroup.save();
+					// 	return articleGroup.save();
 	
-					})
+					// })
 					.catch((err)=>{
 						if(err){
 							logg.error(err)
@@ -219,7 +304,7 @@ class headlineProcessor {
             .exec()
             .then((articleGroup) => {
             if (!articleGroup) {
-                return { ftArticles: [], otherArticles: [] };
+                return  [];
             }
             let ftArticles = articleGroup.articles.filter((article) => {
                 return article.sourceId === 'financial-times';
@@ -339,29 +424,44 @@ class headlineProcessor {
             sources: sources,
             language: 'en'
         })
-            .then(response => {
+        .then(response => {
             if (response.status === 'error') {
                 throw (response.message);
             }
-            return response.articles.map((article) => {
+		
+			return response.articles.map((article) => {
+				let tokenizedTitle =  tokenizer.tokenize(article.title).map((token)=>{
+					return {
+						token: token,
+						matched:false
+					}
+				});
+
+				let tokenCount = tokenizedTitle.length;
+
                 return {
                     sourceId: article.source.id,
                     sourceName: article.source.name,
                     title: article.title,
                     url: article.url,
-                    publishedAt: article.publishedAt
+					publishedAt: article.publishedAt,
+					tokenCount:tokenCount,
+					tokenizedTitle: tokenizedTitle
                 };
             });
         })
-            .then((articles) => {
+        .then((articles) => {
             let articleGroup = new ArticleGroup();
-            articleGroup.articles = articles;
-            return articleGroup.save();
+			
+			articleGroup.articles = articles;
+			
+			return articleGroup.save();
         })
-            .then((articleGroup) => {
-            return articleGroup;
+        .then((articleGroup) => {
+			console.log(articleGroup)
+			return articleGroup
         })
-            .catch((err) => {
+        .catch((err) => {
             logg.error(err);
         });
      }

@@ -305,25 +305,40 @@ class headlineProcessor {
                         token: token
                     };
                 });
+                console.log(typeof (article.source.name));
+                let frogCount = 'many';
+                //console.log(tokenizedTitle);
                 return {
+                    frogs: frogCount,
                     sourceId: article.source.id,
                     sourceName: article.source.name,
                     title: article.title,
                     url: article.url,
                     publishedAt: article.publishedAt,
-                    tokenCount: tokenCount,
-                    tokenizedTitle: tokenizedTitle
+                    tokenCount: '9',
+                    tokenizedTitle: tokenizedTitle,
+                    keyPhrases: ['test']
                 };
             });
         })
             .then((articles) => {
+            //console.log(articles)
             let articleGroup = new ArticleGroup();
             articleGroup.articles = articles;
-            return articleGroup.save();
-        })
-            .then((articleGroup) => {
             console.log(articleGroup);
-            return articleGroup;
+            return [articleGroup.save(), articles];
+        })
+            .then(([articleGroup, articles]) => {
+            return articleGroup
+                .then((ag) => {
+                // console.log(ag)
+                ag.articles.forEach((article) => {
+                    article.keyPhrases = ['test'];
+                    article.tokenCount = 9;
+                });
+                return ag.save();
+            });
+            //console.log(articles);
         })
             .catch((err) => {
             logg.error(err);
